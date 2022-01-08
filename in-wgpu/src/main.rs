@@ -2,6 +2,8 @@
 
 use sdl2::event::Event;
 
+use in_wgpu::window::WindowWrapper;
+
 fn main() {
     env_logger::init();
 
@@ -14,6 +16,7 @@ fn main() {
         .resizable()
         .build()
         .expect("Unable to create SDL window");
+    let window = WindowWrapper(&window);
 
     let mut pump = sdl.event_pump().expect("Unable to create SDL event pump");
     let mut state = pollster::block_on(in_wgpu::State::new(&window));
