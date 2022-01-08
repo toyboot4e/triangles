@@ -1,0 +1,11 @@
+[package]
+name = "in-wgpu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vek = "0.15.4"
+pollster = "0.2.4"
+sdl2 = { version = "0.35.1", features = ["raw-window-handle"] }
+env_logger = "0.9.0"
+
