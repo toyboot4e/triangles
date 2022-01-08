@@ -1,0 +1,17 @@
+[package]
+name = "in_rokol"
+version = "0.1.0"
+authors = ["toyboot4e <toyboot4e@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+sdl2 = "0.35.1"
+rokol = { version = "0.4.0", features = ["glcore33", "impl-gfx", "sdl2"] }
+
+log = "0.4.14"
+env_logger = "0.8.3"
+
+anyhow = "1.0.52"
+image = "0.23.13"
+vek = "0.15.4"
+
