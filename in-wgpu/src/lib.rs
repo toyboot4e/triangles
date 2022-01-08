@@ -1,22 +1,28 @@
 pub mod window;
 
-use sdl2::event::WindowEvent;
 use vek::Extent2;
 
 use crate::window::WindowWrapper;
 
-pub struct State {
+/// `wgpu` handles
+#[derive(Debug)]
+pub struct Gpu {
+    /// Frame buffer
     surface: wgpu::Surface,
+    /// Connection to a graphics device
     device: wgpu::Device,
+    /// Command queue on the device
     queue: wgpu::Queue,
+    /// Presentation parameters of the surface
     config: wgpu::SurfaceConfiguration,
+    /// Current frame buffer size in pixels
     size: Extent2<u32>,
 }
 
-impl State {
+impl Gpu {
     // Creating some of the wgpu types requires async code
-    pub async fn new(window: &WindowWrapper<'_>) -> Self {
-        let size = Extent2::<u32>::from(window.0.size());
+    pub async fn new(window: &WindowWrapper) -> Self {
+        let size = window.fb_size_u();
 
         // handle to our GPU
         let instance = wgpu::Instance::new(wgpu::Backends::all());
@@ -67,19 +73,86 @@ impl State {
         }
     }
 
-    pub fn resize(&mut self, new_size: Extent2<u32>) {
-        todo!()
+    /// Updates the frame buffer
+    ///
+    /// - `new_size`: size not mulitplied by DPI scaling factor
+    pub fn resize(&mut self, window: &WindowWrapper) {
+        self.resize_raw(window.fb_size_u());
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        todo!()
-    }
+    pub fn resize_raw(&mut self, new_size: Extent2<u32>) {
+        assert!(
+            new_size.w != 0 && new_size.h != 0,
+            "resizing to zero size can panic the app"
+        );
 
-    pub fn update(&mut self) {
-        todo!()
+        if self.size == new_size {
+            return;
+        }
+
+        self.size = new_size;
+        self.config.width = new_size.w;
+        self.config.height = new_size.h;
+        self.surface.configure(&self.device, &self.config);
+    }
+}
+
+/// Accessors
+impl Gpu {
+    /// Current frame buffer's size in picels
+    pub fn fb_size(&self) -> Extent2<u32> {
+        self.size
+    }
+}
+
+#[derive(Debug)]
+pub struct App {
+    pub gpu: Gpu,
+}
+
+impl App {
+    pub fn new(window: &WindowWrapper) -> Self {
+        let state = pollster::block_on(Gpu::new(window));
+        Self { gpu: state }
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        todo!()
+        let output = self.gpu.surface.get_current_texture()?;
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self
+            .gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("encoder"),
+            });
+
+        {
+            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("render-pass"),
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+        }
+
+        // submit will accept anything that implements IntoIter
+        self.gpu.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+
+        Ok(())
     }
 }
