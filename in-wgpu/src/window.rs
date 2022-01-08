@@ -19,17 +19,17 @@ unsafe impl<'a> HasRawWindowHandle for WindowWrapper<'a> {
     #[cfg(target_os = "macos")]
     /// do some work on macOS to get the root NSView for the NSWindow returned by sdl2
     fn raw_window_handle(&self) -> RawWindowHandle {
+        use objc::{msg_send, runtime::Object, sel, sel_impl};
         use raw_window_handle::AppKitHandle;
-        use objc::{runtime::Object, msg_send, sel, sel_impl};
 
         let handle = self.0.raw_window_handle();
         match handle {
             RawWindowHandle::AppKit(handle) => {
                 let mut x = AppKitHandle::empty();
-                x.ns_window= handle.ns_window;
-                x.ns_view= unsafe { msg_send![handle.ns_window as *mut Object, contentView] };
+                x.ns_window = handle.ns_window;
+                x.ns_view = unsafe { msg_send![handle.ns_window as *mut Object, contentView] };
                 RawWindowHandle::AppKit(x)
-            },
+            }
             _ => unreachable!(),
         }
     }
