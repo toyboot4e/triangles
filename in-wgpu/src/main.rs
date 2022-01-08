@@ -1,3 +1,5 @@
+//! Draw triangle with [`wgpu`]
+
 use sdl2::event::Event;
 
 fn main() {
@@ -13,10 +15,11 @@ fn main() {
         .build()
         .expect("Unable to create SDL window");
 
-    let mut event_pump = sdl.event_pump().expect("Unable to create SDL event pump");
+    let mut pump = sdl.event_pump().expect("Unable to create SDL event pump");
+    let mut state = pollster::block_on(in_wgpu::State::new(&window));
 
     'running: loop {
-        for event in event_pump.poll_iter() {
+        for event in pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
                 _ => {}
