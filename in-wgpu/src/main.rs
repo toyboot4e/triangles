@@ -1,7 +1,6 @@
 //! Draw triangle with [`wgpu`]
 
 use sdl2::event::{Event, WindowEvent};
-use vek::Extent2;
 
 use in_wgpu::window::WindowWrapper;
 
@@ -26,15 +25,15 @@ fn main() -> Result<(), wgpu::SurfaceError> {
         .event_pump()
         .expect("Unable to create SDL event pump");
 
-    let mut app = in_wgpu::App::new(&window);
+    let mut app = pollster::block_on(in_wgpu::app::App::new(&window));
 
     'running: loop {
         for event in pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
                 Event::Window { win_event, .. } => match win_event {
-                    WindowEvent::Resized(w, h) => {
-                        app.gpu.resize(&window);
+                    WindowEvent::Resized(_w, _h) => {
+                        app.gpu.on_resize(&window);
                     }
                     _ => {}
                 },
