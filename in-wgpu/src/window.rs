@@ -4,6 +4,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use sdl2::video::Window;
 use vek::Extent2;
 
+/// SDL2 window wrapper
 pub struct WindowWrapper {
     pub sdl: sdl2::Sdl,
     pub vid: sdl2::VideoSubsystem,
@@ -47,7 +48,7 @@ impl WindowWrapper {
 
 /// Hack for working with `sdl2` + `wgpu` on macOS
 ///
-/// Thanks: https://github.com/Rust-SDL2/rust-sdl2/issues/1116
+/// Thanks: <https://github.com/Rust-SDL2/rust-sdl2/issues/1116>
 unsafe impl HasRawWindowHandle for WindowWrapper {
     #[cfg(not(target_os = "macos"))]
     /// all non-mac platforms work correctly, so return the handle directly

@@ -12,9 +12,9 @@ pub struct Gpu {
     /// Command queue on the device
     pub(crate) queue: wgpu::Queue,
     /// Presentation parameters of the surface
-    config: wgpu::SurfaceConfiguration,
+    pub(crate) config: wgpu::SurfaceConfiguration,
     /// Current frame buffer size in pixels
-    size: Extent2<u32>,
+    pub(crate) fb_size: Extent2<u32>,
 }
 
 impl Gpu {
@@ -67,7 +67,7 @@ impl Gpu {
             device,
             queue,
             config,
-            size,
+            fb_size: size,
         }
     }
 
@@ -84,21 +84,13 @@ impl Gpu {
             "resizing to zero size can panic the app"
         );
 
-        if self.size == new_size {
+        if self.fb_size == new_size {
             return;
         }
 
-        self.size = new_size;
+        self.fb_size = new_size;
         self.config.width = new_size.w;
         self.config.height = new_size.h;
         self.surface.configure(&self.device, &self.config);
-    }
-}
-
-/// Accessors
-impl Gpu {
-    /// Current frame buffer's size in picels
-    pub fn fb_size(&self) -> Extent2<u32> {
-        self.size
     }
 }
