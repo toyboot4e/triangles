@@ -2,7 +2,7 @@
 
 use sdl2::event::{Event, WindowEvent};
 
-use in_wgpu::window::WindowWrapper;
+use in_wgpu::gfx::WindowWrapper;
 
 fn main() -> Result<(), wgpu::SurfaceError> {
     env_logger::init();

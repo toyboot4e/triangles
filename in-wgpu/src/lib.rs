@@ -1,3 +1,2 @@
 pub mod app;
-pub mod gpu;
-pub mod window;
+pub mod gfx;

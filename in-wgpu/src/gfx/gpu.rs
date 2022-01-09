@@ -1,6 +1,6 @@
 use vek::Extent2;
 
-use crate::window::WindowWrapper;
+use crate::gfx::window::WindowWrapper;
 
 /// `wgpu` handles
 #[derive(Debug)]

@@ -64,7 +64,6 @@ pub struct DynamicMesh<V> {
     bind: rg::Bindings,
     n_indices: usize,
     pub verts: Vec<V>,
-    _phantom: PhantomData<V>,
 }
 
 impl<V> Drop for DynamicMesh<V> {
@@ -91,7 +90,6 @@ impl<V> DynamicMesh<V> {
             bind: b,
             n_indices: indices.len(),
             verts,
-            _phantom: Default::default(),
         }
     }
 
