@@ -1,4 +1,4 @@
-//! Vertices
+//! Vertex/index buffer in handy API
 
 use std::marker::PhantomData;
 
@@ -28,7 +28,7 @@ impl Index for u32 {
 pub struct StaticMesh<V, I> {
     /// CPU vertices (no need to keep the memory)
     _verts: PhantomData<V>,
-    n_verts: u32,
+    _n_verts: u32,
     /// GPU vertices
     vbuf: wgpu::Buffer,
     /// GPU indices
@@ -57,7 +57,7 @@ impl<V: bytemuck::Pod + Vertex, I: Index> StaticMesh<V, I> {
 
         Self {
             _verts: PhantomData,
-            n_verts: verts.len() as u32,
+            _n_verts: verts.len() as u32,
             vbuf,
             _indices: PhantomData,
             ibuf,

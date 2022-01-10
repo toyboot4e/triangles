@@ -1,10 +1,12 @@
 //! Draw triangle with [`wgpu`]
 
+use anyhow::*;
+
 use sdl2::event::{Event, WindowEvent};
 
 use in_wgpu::gfx::WindowWrapper;
 
-fn main() -> Result<(), wgpu::SurfaceError> {
+fn main() -> Result<()> {
     env_logger::init();
 
     let ver = sdl2::version::version();
@@ -25,7 +27,7 @@ fn main() -> Result<(), wgpu::SurfaceError> {
         .event_pump()
         .expect("Unable to create SDL event pump");
 
-    let mut app = pollster::block_on(in_wgpu::app::App::new(&window));
+    let mut app = pollster::block_on(in_wgpu::app::App::new(&window)).map_err(Error::msg)?;
 
     'running: loop {
         for event in pump.poll_iter() {
@@ -41,7 +43,7 @@ fn main() -> Result<(), wgpu::SurfaceError> {
             }
         }
 
-        app.render()?;
+        app.render().map_err(Error::msg)?;
 
         // super-dirty around 60 FPS
         std::thread::sleep(std::time::Duration::from_micros(1000 / 60));

@@ -1,21 +1,44 @@
-use vek::{Vec2, Vec4};
+use anyhow::Result;
 
-use crate::gfx::{Gpu, StaticMesh, TriVertex, Vertex, WindowWrapper};
+use crate::gfx::{Gpu, StaticMesh, Texture, TriVertex, Vertex, WindowWrapper};
 
 #[derive(Debug)]
 pub struct App {
     pub gpu: Gpu,
     rpip: wgpu::RenderPipeline,
     mesh: StaticMesh<TriVertex, u16>,
+    texture: Texture,
+    bind_group: wgpu::BindGroup,
 }
 
 fn verts() -> [TriVertex; 5] {
     [
-        ([-0.0868241f32, 0.49240386], [0.5f32, 0.0, 0.5, 0.0]),
-        ([-0.49513406, 0.06958647], [0.5, 0.0, 0.5, 0.0]),
-        ([-0.21918549, -0.44939706], [0.5, 0.0, 0.5, 0.0]),
-        ([0.35966998, -0.3473291], [0.5, 0.0, 0.5, 0.0]),
-        ([0.44147372, 0.2347359], [0.5, 0.0, 0.5, 0.0]),
+        // (pos, color, uv)
+        (
+            [-0.0868241, 0.49240386],
+            [1.0, 1.0, 1.0, 1.0],
+            [0.4131759, 0.00759614],
+        ),
+        (
+            [-0.49513406, 0.06958647],
+            [1.0, 1.0, 1.0, 1.0],
+            [0.0048659444, 0.43041354],
+        ),
+        (
+            [-0.21918549, -0.44939706],
+            [1.0, 1.0, 1.0, 1.0],
+            [0.28081453, 0.949397],
+        ),
+        (
+            [0.35966998, -0.3473291],
+            [1.0, 1.0, 1.0, 1.0],
+            [0.85967, 0.84732914],
+        ),
+        (
+            [0.44147372, 0.2347359],
+            [1.0, 1.0, 1.0, 1.0],
+            [0.9414737, 0.2652641],
+        ),
     ]
     .map(TriVertex::from)
 }
@@ -23,16 +46,29 @@ fn verts() -> [TriVertex; 5] {
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4, /* padding */ 0];
 
 impl App {
-    pub async fn new(window: &WindowWrapper) -> Self {
+    pub async fn new(window: &WindowWrapper) -> Result<Self> {
         let gpu = Gpu::new(window).await;
+
+        let mesh = StaticMesh::new(&gpu.device, &verts(), INDICES);
+
+        let bytes = include_bytes!("../assets/happy-tree.png");
+        let texture = Texture::from_bytes(&gpu, bytes, "happy-tree")?;
+        let (group_layout, bind_group) = self::simple_bind_group(&gpu, &texture);
+
         let rpip = self::simple_rpip::<TriVertex>(
             &gpu.device,
             include_str!("shader.wgsl"),
             gpu.config.format,
+            &group_layout,
         );
-        let mesh = StaticMesh::new(&gpu.device, &verts(), INDICES);
 
-        Self { gpu, rpip, mesh }
+        Ok(Self {
+            gpu,
+            rpip,
+            mesh,
+            texture,
+            bind_group,
+        })
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -68,6 +104,7 @@ impl App {
             });
 
             rpass.set_pipeline(&self.rpip);
+            rpass.set_bind_group(0, &self.bind_group, &[]);
             self.mesh.draw_all(&mut rpass);
         }
 
@@ -83,6 +120,7 @@ fn simple_rpip<V: Vertex>(
     device: &wgpu::Device,
     src: &str,
     tex_fmt: wgpu::TextureFormat,
+    layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
     let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
         label: Some("shader"),
@@ -91,7 +129,7 @@ fn simple_rpip<V: Vertex>(
 
     let rpip_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("render-pipeline-layout"),
-        bind_group_layouts: &[],
+        bind_group_layouts: &[layout],
         push_constant_ranges: &[],
     });
 
@@ -133,4 +171,47 @@ fn simple_rpip<V: Vertex>(
         },
         multiview: None,
     })
+}
+
+fn simple_bind_group(gpu: &Gpu, texture: &Texture) -> (wgpu::BindGroupLayout, wgpu::BindGroup) {
+    let layout = gpu
+        .device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+            label: Some("texture-bind-group-layout"),
+        });
+
+    let group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&texture.view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&texture.sampler),
+            },
+        ],
+        label: Some("diffuse-bind-group"),
+    });
+
+    (layout, group)
 }
