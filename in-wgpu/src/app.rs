@@ -1,18 +1,40 @@
-use crate::gfx::{Gpu, WindowWrapper};
+use vek::{Vec2, Vec4};
+
+use crate::gfx::{Gpu, StaticMesh, TriVertex, Vertex, WindowWrapper};
 
 #[derive(Debug)]
 pub struct App {
     pub gpu: Gpu,
     rpip: wgpu::RenderPipeline,
+    mesh: StaticMesh<TriVertex>,
 }
+
+const VERTS: &[TriVertex] = &[
+    TriVertex {
+        pos: Vec2::<f32>::new(0.0, 0.5),
+        color: Vec4::<f32>::new(1.0, 0.0, 0.0, 1.0),
+    },
+    TriVertex {
+        pos: Vec2::<f32>::new(-0.5, -0.5),
+        color: Vec4::<f32>::new(0.0, 1.0, 0.0, 1.0),
+    },
+    TriVertex {
+        pos: Vec2::<f32>::new(0.5, -0.5),
+        color: Vec4::<f32>::new(0.0, 0.0, 1.0, 1.0),
+    },
+];
 
 impl App {
     pub async fn new(window: &WindowWrapper) -> Self {
         let gpu = Gpu::new(window).await;
-        let rpip =
-            self::create_simple_shader(&gpu.device, include_str!("shader.wgsl"), gpu.config.format);
+        let rpip = self::simple_rpip::<TriVertex>(
+            &gpu.device,
+            include_str!("shader.wgsl"),
+            gpu.config.format,
+        );
+        let mesh = StaticMesh::new(&gpu.device, VERTS);
 
-        Self { gpu, rpip }
+        Self { gpu, rpip, mesh }
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -48,8 +70,7 @@ impl App {
             });
 
             rpass.set_pipeline(&self.rpip);
-            // three vertices, one triangle instance
-            rpass.draw(0..3, 0..1);
+            self.mesh.draw_all(&mut rpass);
         }
 
         // submit will accept anything that implements IntoIter
@@ -60,7 +81,7 @@ impl App {
     }
 }
 
-fn create_simple_shader(
+fn simple_rpip<V: Vertex>(
     device: &wgpu::Device,
     src: &str,
     tex_fmt: wgpu::TextureFormat,
@@ -82,7 +103,7 @@ fn create_simple_shader(
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[],
+            buffers: &[V::desc()],
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
