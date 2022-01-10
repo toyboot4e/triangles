@@ -27,6 +27,15 @@ pub struct TriVertex {
     pub color: Vec4<f32>,
 }
 
+impl From<([f32; 2], [f32; 4])> for TriVertex {
+    fn from(x: ([f32; 2], [f32; 4])) -> Self {
+        Self {
+            pos: x.0.into(),
+            color: x.1.into(),
+        }
+    }
+}
+
 impl Vertex for TriVertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         const ATTRS: &'static [wgpu::VertexAttribute] =

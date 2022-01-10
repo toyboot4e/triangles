@@ -6,23 +6,21 @@ use crate::gfx::{Gpu, StaticMesh, TriVertex, Vertex, WindowWrapper};
 pub struct App {
     pub gpu: Gpu,
     rpip: wgpu::RenderPipeline,
-    mesh: StaticMesh<TriVertex>,
+    mesh: StaticMesh<TriVertex, u16>,
 }
 
-const VERTS: &[TriVertex] = &[
-    TriVertex {
-        pos: Vec2::<f32>::new(0.0, 0.5),
-        color: Vec4::<f32>::new(1.0, 0.0, 0.0, 1.0),
-    },
-    TriVertex {
-        pos: Vec2::<f32>::new(-0.5, -0.5),
-        color: Vec4::<f32>::new(0.0, 1.0, 0.0, 1.0),
-    },
-    TriVertex {
-        pos: Vec2::<f32>::new(0.5, -0.5),
-        color: Vec4::<f32>::new(0.0, 0.0, 1.0, 1.0),
-    },
-];
+fn verts() -> [TriVertex; 5] {
+    [
+        ([-0.0868241f32, 0.49240386], [0.5f32, 0.0, 0.5, 0.0]),
+        ([-0.49513406, 0.06958647], [0.5, 0.0, 0.5, 0.0]),
+        ([-0.21918549, -0.44939706], [0.5, 0.0, 0.5, 0.0]),
+        ([0.35966998, -0.3473291], [0.5, 0.0, 0.5, 0.0]),
+        ([0.44147372, 0.2347359], [0.5, 0.0, 0.5, 0.0]),
+    ]
+    .map(TriVertex::from)
+}
+
+const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4, /* padding */ 0];
 
 impl App {
     pub async fn new(window: &WindowWrapper) -> Self {
@@ -32,7 +30,7 @@ impl App {
             include_str!("shader.wgsl"),
             gpu.config.format,
         );
-        let mesh = StaticMesh::new(&gpu.device, VERTS);
+        let mesh = StaticMesh::new(&gpu.device, &verts(), INDICES);
 
         Self { gpu, rpip, mesh }
     }
